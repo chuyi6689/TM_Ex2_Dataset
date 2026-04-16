@@ -1,0 +1,22 @@
+# 1. environment
+$env:PYTHONUTF8=1
+
+# 2. model-best correction
+python -m prodigy ner.correct christmas_v3 ./model-best my_new_50_ready.jsonl --label VEG,FRUITS,MEATS,DAIRY,GRAINS,LEGUMES,NUTS_SEED,HERBS_SPICES,SWEETENERS,OILS_FATS,OTHER
+
+# 3. SQLite to jsonl
+python -m prodigy db-out christmas_v3 > my_final_50.jsonl
+
+#  UTF-16 to UTF-8
+python -c "content = open('my_final_50.jsonl', 'r', encoding='utf-16').read(); open('my_final_50_fixed.jsonl', 'w', encoding='utf-8').write(content)"
+
+# 4. Data merged and imported (150 entries in total)
+python -m prodigy db-in final_dataset_150 annotator_a.jsonl
+python -m prodigy db-in final_dataset_150 my_final_50_fixed.jsonl
+python -m prodigy db-in final_dataset_150 boris_final_50.jsonl
+
+# confirm final_dataset_150 
+python -m prodigy stats final_dataset_150
+
+# 6. generate training file 10%  (dev.spacy)
+python -m prodigy data-to-spacy ./final_training_data --ner final_dataset_150 --eval-split 0.1
